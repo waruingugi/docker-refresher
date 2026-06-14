@@ -1,0 +1,7 @@
+# compose.prod.yaml - only loaded explicitly
+services:
+  web:
+    command: gunicorn --workers 4 --bind 0.0.0.0:5000 app:app
+    restart: unless-stopped
+    environment:
+      FLASK_DEBUG: "0"

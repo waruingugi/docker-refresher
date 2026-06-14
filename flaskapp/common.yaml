@@ -1,0 +1,7 @@
+services:
+  app-base:
+    build: .
+    image: flask-app:0.4
+    environment:
+      DB_HOST: db
+      DB_PASS: ${POSTGRES_PASSWORD}

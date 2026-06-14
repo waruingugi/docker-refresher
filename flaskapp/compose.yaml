@@ -1,0 +1,96 @@
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+x-common-env: &common-env
+  TZ: UTC
+  DB_HOST: db
+
+configs:
+  redis_conf:
+    file: ./redis.conf
+
+secrets:
+  db_password:
+    file: ./secrets/db_password.txt
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_PASSWORD: /run/secrets/db_password  # postgres reads the file
+      POSTGRES_DB: ${POSTGRES_DB}
+    secrets:
+      - db_password
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    logging: *default-logging
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  cache:
+    image:  redis:7-alpine
+    logging: *default-logging
+    command: redis-server /etc/redis/redis.conf
+    configs:
+      - source: redis_conf
+        target: /etc/redis/redis.conf
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  migrate:
+    build: .
+    image: flaskapp-app:0.4
+    command: python migrate.py
+    logging: *default-logging
+    environment:
+      <<: *common-env
+      DB_PASS: ${POSTGRES_PASSWORD}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    extends:
+      file: common.yaml
+      service: app-base
+    ports:
+      - "${WEB_PORT}:5000"
+    logging: *default-logging
+    environment:
+      <<: *common-env
+      REDIS_HOST: cache
+      DB_PASS: ${POSTGRES_PASSWORD}
+    depends_on:
+      db:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    secrets:
+      - db_password
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 256M
+        reservations:
+          memory: 128M
+
+volumes:
+  pgdata:
+
+networks:
+  default:
+    name: shared-net
+    external: true

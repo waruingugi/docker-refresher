@@ -1,0 +1,17 @@
+# compose.override.yaml - auto-merged for local dev
+services:
+  web:
+    command: gunicorn --reload --bind 0.0.0.0:5000 app:app
+    environment:
+      FLASK_DEBUG: "1"
+    develop:
+      watch:
+        - action: sync
+          path: ./app.py
+          target: /app/app.py
+        - action: rebuild
+          path: ./requirements.txt
+
+  db:
+    ports:
+      - "5432:5432" # expose Postgres to your Mac in DEV ONLY, for a GUI client
