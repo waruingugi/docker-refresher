@@ -160,7 +160,7 @@ cython_debug/
 .claude/todos/
 
 ### Custom folders ###
-/secrets
+**/secrets/
 
 # ------------------------------------------------------------------
 # End of .gitignore
