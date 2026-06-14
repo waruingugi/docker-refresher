@@ -158,7 +158,7 @@ cython_debug/
 .claude/todos/
 
 ### Custom folders ###
-/flask-app
+/flaskapp
 
 # ------------------------------------------------------------------
 # End of .gitignore
